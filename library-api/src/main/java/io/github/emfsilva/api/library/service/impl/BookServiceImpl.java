@@ -6,6 +6,8 @@ import io.github.emfsilva.api.library.repository.BookRepository;
 import io.github.emfsilva.api.library.service.BookService;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class BookServiceImpl implements BookService {
 
@@ -20,6 +22,11 @@ public class BookServiceImpl implements BookService {
     public Book save(Book book) {
         existByIsbn(book);
         return repository.save(book);
+    }
+
+    @Override
+    public Optional<Book> getById(Long id) {
+        return Optional.empty();
     }
 
     private void existByIsbn(Book book) {

@@ -23,6 +23,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.util.Optional;
+
 import static org.hamcrest.Matchers.hasSize;
 
 
@@ -46,7 +48,7 @@ public class BookControllerTest {
     @DisplayName("Deve criar um livro com sucesso")
     public void createBookTest() throws Exception {
 
-        BookDTO dto = createNewBook();
+        BookDTO dto = createNewBookDTO();
 
         Book savedBook = Book.builder().id(101L).author("Emerson").title("As Aventuras").isbn("001").build();
 
@@ -91,7 +93,7 @@ public class BookControllerTest {
     @DisplayName("Deve Lançar erro ao tentar cadastrar um livro com o isbn já utilizado por outro")
     public void createBookWithDuplicatedIsbn() throws Exception{
 
-        BookDTO dto = createNewBook();
+        BookDTO dto = createNewBookDTO();
 
         String json = new ObjectMapper().writeValueAsString(dto);
         BDDMockito.given(service.save(Mockito.any(Book.class))).willThrow(new BusinessException(ISBN_CADASTRADO));
@@ -110,7 +112,34 @@ public class BookControllerTest {
 
     }
 
-    private BookDTO createNewBook() {
+    @Test
+    @DisplayName("Deve obter informações de um livro")
+    void getBookDetailsTest() throws Exception {
+
+        //cenario - given
+        Book book = createNewBook();
+        BDDMockito.given(service.getById(createNewBook().getId())).willReturn(Optional.of(book));
+
+
+        //execuxao - when
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .get(BOOK_API.concat("/" + createNewBook().getId()))
+                .accept(MediaType.APPLICATION_JSON);
+
+        mvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("id").value(createNewBook().getId()))
+                .andExpect(MockMvcResultMatchers.jsonPath("title").value(createNewBook().getTitle()))
+                .andExpect(MockMvcResultMatchers.jsonPath("author").value(createNewBook().getAuthor()))
+                .andExpect(MockMvcResultMatchers.jsonPath("isbn").value(createNewBook().getIsbn()));
+
+    }
+
+    private BookDTO createNewBookDTO() {
         return BookDTO.builder().author("Emerson").title("As Aventuras").isbn("001").build();
+    }
+
+    private Book createNewBook(){
+        return Book.builder().id(1L).author("Emerson").title("As Aventuras").isbn("001").build();
     }
 }
