@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/books")
@@ -40,6 +41,14 @@ public class BookController {
     public ResponseEntity<BookDTO> getById(@PathVariable Long id){
         return ResponseEntity.ok().body(service.getById(id).map(book -> modelMapper.map(book, BookDTO.class))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<BookDTO> delete(@PathVariable Long id){
+        Book book = service.getById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        service.delete(book);
+       return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -29,6 +29,12 @@ public class BookServiceImpl implements BookService {
         return Optional.empty();
     }
 
+    @Override
+    public void delete(Book book) {
+
+    }
+
+
     private void existByIsbn(Book book) {
         if(repository.existsByIsbn(book.getIsbn())) {
           throw new BusinessException(ISBN_CADASTRADO );

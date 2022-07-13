@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.Optional;
 
+import static org.hamcrest.Matchers.blankOrNullString;
 import static org.hamcrest.Matchers.hasSize;
 
 
@@ -139,7 +140,6 @@ public class BookControllerTest {
     @DisplayName("Deve retornar resouce not found quando o livro procuarado não existir")
     void bookNotFoundTest() throws Exception {
 
-        Book book = Book.builder().id(1L).author("Emerson").title("As Aventuras").isbn("001").build();
         BDDMockito.given(service.getById(Mockito.anyLong())).willReturn(Optional.empty());
 
         MockHttpServletRequestBuilder request = MockMvcRequestBuilders
@@ -148,6 +148,35 @@ public class BookControllerTest {
 
         mvc.perform(request)
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
+
+
+    @Test
+    @DisplayName("Deve deletar um livro")
+    void deleteBookTest() throws Exception{
+        // cenario - given
+        Book book = Book.builder().id(1L).author("Emerson").title("As Aventuras").isbn("001").build();
+        BDDMockito.given(service.getById(book.getId())).willReturn(Optional.of(book));
+
+        //execução
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete(BOOK_API.concat("/" + book.getId()));
+
+        // verifação
+        mvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isNoContent());
+
+    }
+
+    @Test
+    @DisplayName("Deve retornar resource not found quando não encontrar o livro ")
+    void deleteBookNotFoundTest() throws Exception {
+        BDDMockito.given(service.getById(Mockito.anyLong())).willReturn(Optional.empty());
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete(BOOK_API.concat("/" + 1L));
+
+        mvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+
     }
 
     private BookDTO createNewBookDTO() {
