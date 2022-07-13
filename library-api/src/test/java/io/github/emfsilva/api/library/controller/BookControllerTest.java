@@ -117,29 +117,40 @@ public class BookControllerTest {
     void getBookDetailsTest() throws Exception {
 
         //cenario - given
-        Book book = createNewBook();
-        BDDMockito.given(service.getById(createNewBook().getId())).willReturn(Optional.of(book));
+        Book book = Book.builder().id(1L).author("Emerson").title("As Aventuras").isbn("001").build();
+        BDDMockito.given(service.getById(book.getId())).willReturn(Optional.of(book));
 
 
         //execuxao - when
         MockHttpServletRequestBuilder request = MockMvcRequestBuilders
-                .get(BOOK_API.concat("/" + createNewBook().getId()))
+                .get(BOOK_API.concat("/" + book.getId()))
                 .accept(MediaType.APPLICATION_JSON);
 
         mvc.perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("id").value(createNewBook().getId()))
-                .andExpect(MockMvcResultMatchers.jsonPath("title").value(createNewBook().getTitle()))
-                .andExpect(MockMvcResultMatchers.jsonPath("author").value(createNewBook().getAuthor()))
-                .andExpect(MockMvcResultMatchers.jsonPath("isbn").value(createNewBook().getIsbn()));
+                .andExpect(MockMvcResultMatchers.jsonPath("id").value(book.getId()))
+                .andExpect(MockMvcResultMatchers.jsonPath("title").value(book.getTitle()))
+                .andExpect(MockMvcResultMatchers.jsonPath("author").value(book.getAuthor()))
+                .andExpect(MockMvcResultMatchers.jsonPath("isbn").value(book.getIsbn()));
 
+    }
+
+    @Test
+    @DisplayName("Deve retornar resouce not found quando o livro procuarado não existir")
+    void bookNotFoundTest() throws Exception {
+
+        Book book = Book.builder().id(1L).author("Emerson").title("As Aventuras").isbn("001").build();
+        BDDMockito.given(service.getById(Mockito.anyLong())).willReturn(Optional.empty());
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .get(BOOK_API.concat("/" + 1L))
+                .accept(MediaType.APPLICATION_JSON);
+
+        mvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
     private BookDTO createNewBookDTO() {
         return BookDTO.builder().author("Emerson").title("As Aventuras").isbn("001").build();
-    }
-
-    private Book createNewBook(){
-        return Book.builder().id(1L).author("Emerson").title("As Aventuras").isbn("001").build();
     }
 }
