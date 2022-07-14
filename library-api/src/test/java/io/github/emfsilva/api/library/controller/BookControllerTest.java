@@ -6,6 +6,7 @@ import io.github.emfsilva.api.library.exception.business.BusinessException;
 import io.github.emfsilva.api.library.model.dto.BookDTO;
 import io.github.emfsilva.api.library.model.entity.Book;
 import io.github.emfsilva.api.library.service.BookService;
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -179,7 +180,56 @@ public class BookControllerTest {
 
     }
 
+    @Test
+    @DisplayName("Deve atualizar um livro")
+    void updateBookTest() throws Exception {
+        Long id = 1L;
+        String json = new ObjectMapper().writeValueAsString(createNewBook());
+
+        Book updatingBook = Book.builder().id(1L).author("some author").title("some title").isbn("321").build();
+        Book updateBook = Book.builder().id(1L).author("Emerson").title("As Aventuras").isbn("321").build();
+
+
+        BDDMockito.given(service.getById(id)).willReturn(Optional.of(updatingBook));
+
+        BDDMockito.given(service.update(updatingBook)).willReturn(updateBook);
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.put(BOOK_API.concat("/" + 1))
+                .content(json)
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("id").value(createNewBook().getId()))
+                .andExpect(MockMvcResultMatchers.jsonPath("title").value(createNewBook().getTitle()))
+                .andExpect(MockMvcResultMatchers.jsonPath("author").value(createNewBook().getAuthor()))
+                .andExpect(MockMvcResultMatchers.jsonPath("isbn").value("321"));
+
+    }
+    @Test
+    @DisplayName("Deve retornar 404 ao tentar atualizar um livro inexistente")
+    void updateNotExistBookTest() throws Exception {
+
+        String json = new ObjectMapper().writeValueAsString(createNewBook());
+
+
+        BDDMockito.given(service.getById(Mockito.anyLong())).willReturn(Optional.empty());
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.put(BOOK_API.concat("/" + 1L))
+                .content(json)
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+
+    }
+
     private BookDTO createNewBookDTO() {
         return BookDTO.builder().author("Emerson").title("As Aventuras").isbn("001").build();
+    }
+    private Book createNewBook() {
+        return Book.builder().id(1L).author("Emerson").title("As Aventuras").isbn("001").build();
     }
 }

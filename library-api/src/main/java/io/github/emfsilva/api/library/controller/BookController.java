@@ -51,6 +51,15 @@ public class BookController {
 
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<BookDTO> update(@PathVariable Long id, BookDTO bookDTO){
+        Book book = service.getById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        book.setAuthor(bookDTO.getAuthor());
+        book.setTitle(bookDTO.getTitle());
+        book = service.update(book);
+        return ResponseEntity.status(HttpStatus.OK).body(modelMapper.map(book, BookDTO.class));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiErrors handleValidationExceptions(MethodArgumentNotValidException ex) {

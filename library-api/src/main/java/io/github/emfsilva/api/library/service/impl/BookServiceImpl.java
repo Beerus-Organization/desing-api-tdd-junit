@@ -34,6 +34,11 @@ public class BookServiceImpl implements BookService {
 
     }
 
+    @Override
+    public Book update(Book book) {
+        return null;
+    }
+
 
     private void existByIsbn(Book book) {
         if(repository.existsByIsbn(book.getIsbn())) {
