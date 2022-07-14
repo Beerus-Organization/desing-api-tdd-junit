@@ -11,6 +11,8 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.util.Optional;
+
 @ExtendWith(SpringExtension.class)
 @ActiveProfiles("test")
 @DataJpaTest
@@ -44,9 +46,7 @@ class BookRepositoryTest {
     void shouldReturnFalseWhenIsbnDoesntExist() {
 
         // cenario
-
         Book book = createNewBook();
-
 
         // execucao
         boolean exists = repository.existsByIsbn(book.getIsbn());
@@ -55,8 +55,22 @@ class BookRepositoryTest {
         Assertions.assertThat(exists).isFalse();
     }
 
+    @Test
+    @DisplayName("Deve obter um livro por ID")
+    void findByIdTest() {
+        // cenario
+       Book book =  createNewBook();
+       entityManager.persist(book);
+
+       // execução
+        Optional<Book> foundBook = repository.findById(book.getId());
+
+        //verificação
+        Assertions.assertThat(foundBook.isPresent()).isTrue();
+
+    }
+
     private Book createNewBook() {
         return Book.builder().author("Emerson").title("As Aventuras").isbn("123").build();
     }
-
 }

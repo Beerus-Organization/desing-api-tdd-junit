@@ -31,12 +31,14 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public void delete(Book book) {
-
+        Book bookReturn = findById(book);
+        repository.delete(bookReturn);
     }
 
     @Override
     public Book update(Book book) {
-        return null;
+       Book bookReturn = findById(book);
+       return  repository.save(bookReturn);
     }
 
 
@@ -44,5 +46,13 @@ public class BookServiceImpl implements BookService {
         if(repository.existsByIsbn(book.getIsbn())) {
           throw new BusinessException(ISBN_CADASTRADO );
        }
+    }
+
+    private Book findById(Book book) {
+        if(book.getId() == null) {
+            throw new IllegalArgumentException("Book id cant be null");
+        }
+
+        return book;
     }
 }

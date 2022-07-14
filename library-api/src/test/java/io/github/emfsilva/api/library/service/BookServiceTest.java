@@ -77,7 +77,6 @@ class BookServiceTest {
 
         // verificação
         Assertions.assertThat(expection).isInstanceOf(BusinessException.class).hasMessage(ISBN_CADASTRADO);
-
         Mockito.verify(repository, Mockito.never()).save(book);
     }
 
@@ -116,5 +115,36 @@ class BookServiceTest {
         // verificação
         Assertions.assertThat(book.isPresent()).isFalse();
 
+    }
+
+    @Test
+    @DisplayName("Deve deletar um livro por ID")
+    void deleteTest() {
+
+        //cenario
+        Long id = 1L;
+        Book book = createValidBook();
+        book.setId(id);
+        Mockito.when(repository.findById(id)).thenReturn(Optional.of(book));
+
+        // execução
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> service.delete(book));
+
+        // verificação
+        Mockito.verify(repository, Mockito.times(1)).delete(book);
+    }
+
+    @Test
+    @DisplayName("Deve ocorrer erro ao tentar deletar um livro inexistente")
+    void deleteInvalidBook(){
+
+        // cenario
+        Book book = new Book();
+
+        // execucao
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> service.delete(book));
+
+        // verificação
+        Mockito.verify(repository, Mockito.never()).delete(book);
     }
 }
