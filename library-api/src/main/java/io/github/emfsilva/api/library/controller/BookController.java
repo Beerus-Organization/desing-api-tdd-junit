@@ -6,6 +6,9 @@ import io.github.emfsilva.api.library.model.dto.BookDTO;
 import io.github.emfsilva.api.library.model.entity.Book;
 import io.github.emfsilva.api.library.service.BookService;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -14,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/books")
@@ -33,6 +38,16 @@ public class BookController {
         entity = service.save(entity);
         BookDTO returnDTO = modelMapper.map(entity, BookDTO.class);
         return ResponseEntity.status(HttpStatus.CREATED).body(returnDTO);
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<BookDTO>> find(BookDTO bookDTO, Pageable pageable) {
+        Book filter = modelMapper.map(bookDTO, Book.class);
+        Page<Book> result = service.find(filter, pageable);
+        List<BookDTO> list = result.getContent().stream()
+                .map(entity -> modelMapper.map(entity, BookDTO.class))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok().body(new PageImpl<>(list,pageable, result.getTotalElements()));
     }
 
 
