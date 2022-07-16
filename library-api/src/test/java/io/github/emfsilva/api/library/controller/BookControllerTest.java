@@ -6,16 +6,22 @@ import io.github.emfsilva.api.library.exception.business.BusinessException;
 import io.github.emfsilva.api.library.model.dto.BookDTO;
 import io.github.emfsilva.api.library.model.entity.Book;
 import io.github.emfsilva.api.library.service.BookService;
+import lombok.val;
 import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -24,10 +30,14 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.blankOrNullString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
 //@RunWith(SpringRunner.class)
@@ -64,7 +74,7 @@ public class BookControllerTest {
                 .content(json);
 
         mvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isCreated())
+                .andExpect(status().isCreated())
                 .andExpect(MockMvcResultMatchers.jsonPath("id").isNotEmpty())
                 .andExpect(MockMvcResultMatchers.jsonPath("id").value(101L))
                 .andExpect(MockMvcResultMatchers.jsonPath("title").value(dto.getTitle()))
@@ -86,14 +96,14 @@ public class BookControllerTest {
                 .content(json);
 
         mvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(status().isBadRequest())
                 .andExpect(MockMvcResultMatchers.jsonPath("errors", hasSize(3)));
 
     }
 
     @Test
     @DisplayName("Deve Lançar erro ao tentar cadastrar um livro com o isbn já utilizado por outro")
-    public void createBookWithDuplicatedIsbn() throws Exception{
+    public void createBookWithDuplicatedIsbn() throws Exception {
 
         BookDTO dto = createNewBookDTO();
 
@@ -108,7 +118,7 @@ public class BookControllerTest {
                 .content(json);
 
         mvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(status().isBadRequest())
                 .andExpect(MockMvcResultMatchers.jsonPath("errors", hasSize(1)))
                 .andExpect(MockMvcResultMatchers.jsonPath("errors[0]").value(ISBN_CADASTRADO));
 
@@ -129,7 +139,7 @@ public class BookControllerTest {
                 .accept(MediaType.APPLICATION_JSON);
 
         mvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("id").value(book.getId()))
                 .andExpect(MockMvcResultMatchers.jsonPath("title").value(book.getTitle()))
                 .andExpect(MockMvcResultMatchers.jsonPath("author").value(book.getAuthor()))
@@ -148,13 +158,13 @@ public class BookControllerTest {
                 .accept(MediaType.APPLICATION_JSON);
 
         mvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isNotFound());
+                .andExpect(status().isNotFound());
     }
 
 
     @Test
     @DisplayName("Deve deletar um livro")
-    void deleteBookTest() throws Exception{
+    void deleteBookTest() throws Exception {
         // cenario - given
         Book book = Book.builder().id(1L).author("Emerson").title("As Aventuras").isbn("001").build();
         BDDMockito.given(service.getById(book.getId())).willReturn(Optional.of(book));
@@ -164,7 +174,7 @@ public class BookControllerTest {
 
         // verifação
         mvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isNoContent());
+                .andExpect(status().isNoContent());
 
     }
 
@@ -176,7 +186,7 @@ public class BookControllerTest {
         MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete(BOOK_API.concat("/" + 1L));
 
         mvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isNotFound());
+                .andExpect(status().isNotFound());
 
     }
 
@@ -200,13 +210,14 @@ public class BookControllerTest {
                 .contentType(MediaType.APPLICATION_JSON);
 
         mvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("id").value(createNewBook().getId()))
                 .andExpect(MockMvcResultMatchers.jsonPath("title").value(createNewBook().getTitle()))
                 .andExpect(MockMvcResultMatchers.jsonPath("author").value(createNewBook().getAuthor()))
                 .andExpect(MockMvcResultMatchers.jsonPath("isbn").value("321"));
 
     }
+
     @Test
     @DisplayName("Deve retornar 404 ao tentar atualizar um livro inexistente")
     void updateNotExistBookTest() throws Exception {
@@ -222,7 +233,32 @@ public class BookControllerTest {
                 .contentType(MediaType.APPLICATION_JSON);
 
         mvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isNotFound());
+                .andExpect(status().isNotFound());
+
+    }
+
+    @Test
+    @DisplayName("Deve filtrar livros")
+    void findBooksTest() throws Exception {
+        Long id = 1L;
+        Book book = createNewBook();
+        book.setId(id);
+
+        BDDMockito.given(service.find(Mockito.any(Book.class),
+                Mockito.any(Pageable.class))).willReturn(new PageImpl<>(List.of(book), PageRequest.of(0, 100), 1));
+        // - /api/books?title=%s&author=%s&page=0&size=100
+        String queryString = String.format("?title=%s&author=%s&page=0&size=100",
+                book.getTitle(), book.getAuthor());
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.get(BOOK_API.concat(queryString))
+                .accept(MediaType.APPLICATION_JSON);
+
+        mvc.perform(request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("content", Matchers.hasSize(1)))
+                .andExpect(jsonPath("totalElements").value(1))
+                .andExpect(jsonPath("pageable.pageSize").value(100))
+                .andExpect(jsonPath("pageable.pageNumber").value(0));
 
     }
 
